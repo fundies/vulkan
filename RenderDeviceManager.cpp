@@ -79,7 +79,8 @@ int RenderDevice::GetOperationQueueIndex(VkQueueFlagBits operation) const {
 
 int RenderDevice::GetPresentQueueIndex() const {
   // if our Graphics queue can also present use that
-  if (int q = GetOperationQueueIndex(VK_QUEUE_GRAPHICS_BIT) != -1)
+  int q = GetOperationQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+  if (q != -1)
     if (_queue_proprties[q].presentation_support) return q;
 
   for (const auto &p : _queue_proprties) 

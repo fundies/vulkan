@@ -135,10 +135,10 @@ bool Renderer::InitInstance(const char* game_name, const char* engine_name, cons
   VkApplicationInfo appInfo = {};
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   appInfo.pApplicationName = game_name;
-  appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+  appInfo.applicationVersion = VK_MAKE_VERSION(1, 1, 120);
   appInfo.pEngineName = engine_name;
-  appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = VK_API_VERSION_1_0;
+  appInfo.engineVersion = VK_MAKE_VERSION(1, 1, 120);
+  appInfo.apiVersion = VK_API_VERSION_1_1;
 
   VkInstanceCreateInfo createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -373,7 +373,10 @@ void Renderer::DestroySwapChain() {
   vkDestroyDescriptorPool(_vk_logical_device, _vk_descriptor_pool, nullptr);
 }
 
+static int cnt = 0;
+
 bool Renderer::ResetSwapChain() {
+  std::cout << cnt++ << std::endl;
   vkDeviceWaitIdle(_vk_logical_device);
 
   DestroySwapChain();
@@ -658,12 +661,24 @@ bool Renderer::InitRenderPass() {
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &colorAttachmentRef;
 
+
+  VkSubpassDependency dependency = {};
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = 0;
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependency.srcAccessMask = 0;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+
   VkRenderPassCreateInfo renderPassInfo = {};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   renderPassInfo.attachmentCount = 1;
   renderPassInfo.pAttachments = &colorAttachment;
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpass;
+  renderPassInfo.dependencyCount = 1;
+  renderPassInfo.pDependencies = &dependency;
 
   if (vkCreateRenderPass(_vk_logical_device, &renderPassInfo, nullptr, &_vk_render_pass) != VK_SUCCESS) {
     std::cerr << "Failed to create render pass" << std::endl;
@@ -763,7 +778,7 @@ bool Renderer::InitTextureSampler() {
   samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.anisotropyEnable = VK_TRUE;
+  samplerInfo.anisotropyEnable = VK_FALSE;
   samplerInfo.maxAnisotropy = 16;
   samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   samplerInfo.unnormalizedCoordinates = VK_FALSE;
@@ -1147,7 +1162,6 @@ void Renderer::DrawFrame() {
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
     ResetSwapChain();
-    std::cout << _vk_swapchain_extent.width << std::endl;
     return;
   } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     std::cerr << "Failed to acquire swap chain image" << std::endl;
